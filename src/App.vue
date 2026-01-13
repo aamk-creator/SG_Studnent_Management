@@ -1,7 +1,9 @@
 <template>
   <v-app>
-    <LoginPage v-if="!isAuthenticated" />
+    <!-- Show LoginPage if not authenticated -->
+    <LoginPage v-if="!isAuthenticated" @login-success="onLoginSuccess" />
 
+    <!-- Main app layout after login -->
     <template v-else>
       <AppTopbar @toggle-drawer="toggleDrawer" />
 
@@ -31,7 +33,6 @@
 import { mapGetters } from "vuex";
 
 import LoginPage from "./views/LoginPage.vue";
-
 import AppSidebar from "./components/layout/AppSidebar.vue";
 import AppTopbar from "./components/layout/AppTopbar.vue";
 import AppFooter from "./components/layout/AppFooter.vue";
@@ -58,7 +59,7 @@ export default {
     return {
       drawer: true,
       mini: false,
-      selectedPage: "DashboardPage",
+      selectedPage: "Dashboard", // default page after login
     };
   },
   computed: {
@@ -72,6 +73,11 @@ export default {
         this.drawer = true;
         this.mini = false;
       }
+    },
+
+    // Called when login succeeds
+    onLoginSuccess() {
+      this.selectedPage = "Dashboard";
     },
   },
 };

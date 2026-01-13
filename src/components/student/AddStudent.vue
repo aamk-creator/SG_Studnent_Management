@@ -1,105 +1,70 @@
 <template>
   <v-container fluid>
-    <v-card>
-      <v-toolbar flat color="green-darken-2" dark rounded class="max-w-md mx-auto">
+    <v-card class="max-w-md mx-auto">
+      <!-- Header -->
+      <v-toolbar color="green darken-2" dark flat>
         <v-toolbar-title>
-          <v-icon start>mdi-account-plus-outline</v-icon>
+          <v-icon class="mr-2">mdi-account-plus-outline</v-icon>
           Add New Student
         </v-toolbar-title>
       </v-toolbar>
 
       <v-card-text>
         <v-form ref="form" v-model="valid">
-          <v-col cols="12" class="py-2">
-            <v-text-field
-              v-model="student.name"
-              label="STUDENT NAME"
-              prepend-inner-icon="mdi-format-letter-case"
-              :rules="[v => !!v || 'Required']"
-              density="compact"
-              variant="underlined"
-              class="line-input"
-            />
-          </v-col>
+          <!-- Student Code -->
+          <v-text-field
+            label="Student Code"
+            v-model="student.code"
+            :rules="[v => !!v || 'Required']"
+            prepend-icon="mdi-identifier"
+          />
 
-          <v-col cols="12" class="py-2">
-            <v-text-field
-              v-model="student.phone"
-              label="PHONE NUMBER"
-              prepend-inner-icon="mdi-phone"
-              :rules="[v => !!v || 'Required']"
-              density="compact"
-              variant="underlined"
-              class="line-input"
-            />
-          </v-col>
+          <!-- Student Name -->
+          <v-text-field
+            label="Student Name"
+            v-model="student.name"
+            :rules="[v => !!v || 'Required']"
+            prepend-icon="mdi-account"
+          />
 
-          <v-col cols="12" class="py-2">
-            <v-text-field
-              v-model="student.address"
-              label="ADDRESS"
-              prepend-inner-icon="mdi-map-marker-outline"
-              density="compact"
-              variant="underlined"
-              class="line-input"
-            />
-          </v-col>
+          <!-- Course -->
+          <v-select
+            label="Course"
+            :items="courses"
+            item-text="name"
+            item-value="id"
+            v-model="student.course_id"
+            :rules="[v => !!v || 'Required']"
+            prepend-icon="mdi-book"
+          />
 
-          <v-col cols="12" class="py-2">
-            <v-text-field
-              v-model="student.branch"
-              label="BRANCH NAME"
-              prepend-inner-icon="mdi-source-branch"
-              density="compact"
-              variant="underlined"
-              class="line-input"
-            />
-          </v-col>
-
-          <v-col cols="12" class="py-2">
-            <v-select
-              v-model="student.subjects"
-              :items="availableSubjects"
-              label="SUBJECTS"
-              prepend-inner-icon="mdi-book-open-page-variant"
-              multiple
-              chips
-              density="compact"
-              variant="underlined"
-              class="line-input"
-            />
-          </v-col>
-
-          <v-col cols="12" class="py-2">
-            <v-select
-              v-model="student.status"
-              :items="['pending', 'complete']"
-              label="STATUS"
-              prepend-inner-icon="mdi-flag"
-              density="compact"
-              variant="underlined"
-              class="line-input"
-            />
-          </v-col>
+          <!-- Branch -->
+          <v-select
+            label="Branch"
+            :items="branches"
+            item-text="name"
+            item-value="id"
+            v-model="student.branch_id"
+            :rules="[v => !!v || 'Required']"
+            prepend-icon="mdi-source-branch"
+          />
         </v-form>
       </v-card-text>
 
-      <v-divider class="my-4" />
+      <v-divider />
 
+      <!-- Actions -->
       <v-card-actions>
         <v-spacer />
-        <v-btn variant="outlined" rounded color="grey-darken-1" @click="resetForm">
-          Cancel
-        </v-btn>
+        <v-btn text @click="resetForm">Cancel</v-btn>
         <v-btn
-          variant="outlined"
-          rounded
-          color="green-darken-2"
-          :disabled="!valid || loading"
+          color="green darken-2"
+          dark
           :loading="loading"
+          :disabled="!valid || loading"
           @click="submitForm"
         >
-          Add
+          Add Student
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -107,48 +72,52 @@
 </template>
 
 <script>
-import { mapActions } from "vuex";
+import axios from "axios";
 
 export default {
   name: "AddStudent",
+
   data() {
     return {
       valid: false,
-      loading: false, // Added loading state for button feedback
+      loading: false,
+
       student: {
+        code: "",
         name: "",
-        phone: "",
-        address: "",
-        branch: "",
-        subjects: [],
-        status: "pending",
+        course_id: null,
+        branch_id: null,
       },
-      availableSubjects: [
-        "Programming Fundamentals",
-        "Data Structures",
-        "Algorithms",
-        "Database Systems",
-        "Computer Networks",
-        "Operating Systems",
-      ],
+
+      courses: [],
+      branches: [],
     };
   },
+
   methods: {
-    ...mapActions(["addStudent"]),
+    async fetchCourses() {
+      const res = await axios.get("/courses");
+      this.courses = res.data.data || [];
+    },
+
+    async fetchBranches() {
+      const res = await axios.get("/branches");
+      this.branches = res.data.data || [];
+    },
 
     async submitForm() {
- 
-      const { valid } = await this.$refs.form.validate();
+      const valid = await this.$refs.form.validate();
       if (!valid) return;
 
       this.loading = true;
       try {
-     
-        await this.addStudent({ ...this.student });
-   
+        await axios.post("/students", {
+          ...this.student,
+          user_id: 1, // TEMP admin user
+        });
         this.resetForm();
-      } catch (error) {
-        console.error("Submission failed:", error);
+      } catch (err) {
+        console.error("Add student failed:", err.response || err);
       } finally {
         this.loading = false;
       }
@@ -156,16 +125,18 @@ export default {
 
     resetForm() {
       this.student = {
+        code: "",
         name: "",
-        phone: "",
-        address: "",
-        branch: "",
-        subjects: [],
-        status: "pending",
+        course_id: null,
+        branch_id: null,
       };
-      if (this.$refs.form) this.$refs.form.resetValidation();
-      this.$emit("close-dialog", false);
+      this.$refs.form.resetValidation();
     },
+  },
+
+  mounted() {
+    this.fetchCourses();
+    this.fetchBranches();
   },
 };
 </script>

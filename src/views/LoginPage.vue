@@ -4,17 +4,16 @@
       <v-col cols="12" sm="8" md="4">
         <v-card class="login-card" elevation="12">
           <v-card-text>
-            
+
+            <!-- Lock icon -->
             <div class="text-center mb-6">
-              <v-icon size="48" color="green darken-1">
-                mdi-lock
-              </v-icon>
+              <v-icon size="48" color="green darken-1">mdi-lock</v-icon>
             </div>
 
-           
-            <v-text-field  
-              v-model="username" 
-              label="USERNAME"
+            <!-- Email -->
+            <v-text-field
+              v-model="email"
+              label="Email"
               prepend-inner-icon="mdi-account"
               color="green"
               dense
@@ -22,9 +21,10 @@
               hide-details
             />
 
+            <!-- Password -->
             <v-text-field
               v-model="password"
-              label="PASSWORD"
+              label="Password"
               :type="showPassword ? 'text' : 'password'"
               prepend-inner-icon="mdi-lock"
               :append-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
@@ -36,6 +36,7 @@
               class="mt-4"
             />
 
+            <!-- Error -->
             <v-alert
               v-if="error"
               type="error"
@@ -46,17 +47,18 @@
               {{ error }}
             </v-alert>
 
-            
+            <!-- Login button -->
             <v-btn
               block
               large
               color="light-green darken-1"
               class="mt-6 white--text"
               :loading="loading"
-              @click="login({ username, password })"
+              @click="submitLogin"
             >
               LOGIN
             </v-btn>
+
           </v-card-text>
         </v-card>
       </v-col>
@@ -65,13 +67,13 @@
 </template>
 
 <script>
-import { mapState, mapActions } from "vuex";
+import { mapActions, mapState } from "vuex";
 
 export default {
   name: "LoginPage",
   data() {
     return {
-      username: "",
+      email: "",
       password: "",
       showPassword: false,
     };
@@ -81,13 +83,24 @@ export default {
   },
   methods: {
     ...mapActions(["login"]),
+
+    async submitLogin() {
+      if (!this.email || !this.password) return;
+
+      await this.login({ email: this.email, password: this.password });
+
+      if (!this.error) {
+        // Emit to parent that login succeeded
+        this.$emit("login-success");
+      }
+    },
   },
 };
 </script>
 
 <style scoped>
 .login-bg {
-  background-color: #eaf6ff; 
+  background-color: #eaf6ff;
 }
 
 .login-card {
@@ -95,8 +108,3 @@ export default {
   padding: 16px;
 }
 </style>
-
-
-
-
-
