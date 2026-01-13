@@ -1,0 +1,28 @@
+{
+  "students": [
+    {
+      "id": 1,
+      "name": "Harry Potter",
+      "address": "123 Main Road",
+      "phnumber": "012345",
+      "subject": "Programming",
+      "status": "complete"
+    },
+    {
+      "id": 2,
+      "name": "Hermione Granger",
+      "address": "456 Wizard Street",
+      "phnumber": "098765",
+      "subject": "Data Structures",
+      "status": "pending"
+    },
+    {
+      "id": 3,
+      "name": "Ron Weasley",
+      "address": "789 Magic Ave",
+      "phnumber": "091122",
+      "subject": "Algorithms",
+      "status": "complete"
+    }
+  ]
+}
