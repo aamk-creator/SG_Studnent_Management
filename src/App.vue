@@ -1,9 +1,17 @@
 <template>
   <v-app>
-    <!-- Show LoginPage if not authenticated -->
-    <LoginPage v-if="!isAuthenticated" @login-success="onLoginSuccess" />
+    <!-- NOT LOGGED IN -->
+    <LoginPage
+      v-if="!isAuthenticated"
+      @login-success="onLoginSuccess"
+    />
 
-    <!-- Main app layout after login -->
+    <!-- STUDENT PORTAL (NO SIDEBAR) -->
+    <StudentPortal
+      v-else-if="isAuthenticated && isStudent"
+    />
+
+    <!-- ADMIN DASHBOARD -->
     <template v-else>
       <AppTopbar @toggle-drawer="toggleDrawer" />
 
@@ -33,9 +41,12 @@
 import { mapGetters } from "vuex";
 
 import LoginPage from "./views/LoginPage.vue";
+import StudentPortal from "./views/StudentPortal.vue";
+
 import AppSidebar from "./components/layout/AppSidebar.vue";
 import AppTopbar from "./components/layout/AppTopbar.vue";
 import AppFooter from "./components/layout/AppFooter.vue";
+
 import Dashboard from "./components/dashboard/DashboardPage.vue";
 import ViewStudent from "./components/student/ViewStudent.vue";
 import AddStudent from "./components/student/AddStudent.vue";
@@ -46,6 +57,7 @@ export default {
   name: "App",
   components: {
     LoginPage,
+    StudentPortal,
     AppSidebar,
     AppTopbar,
     AppFooter,
@@ -59,11 +71,14 @@ export default {
     return {
       drawer: true,
       mini: false,
-      selectedPage: "Dashboard", // default page after login
+      selectedPage: "Dashboard",
     };
   },
   computed: {
-    ...mapGetters(["isAuthenticated"]),
+    ...mapGetters(["isAuthenticated", "user"]),
+    isStudent() {
+      return this.user?.role === "student";
+    },
   },
   methods: {
     toggleDrawer() {
@@ -74,10 +89,9 @@ export default {
         this.mini = false;
       }
     },
-
-    // Called when login succeeds
     onLoginSuccess() {
       this.selectedPage = "Dashboard";
+      this.$store.dispatch("students/fetchStudents");
     },
   },
 };

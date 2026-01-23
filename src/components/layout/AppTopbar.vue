@@ -67,7 +67,7 @@
           <v-list-item-title>Edit Profile</v-list-item-title>
         </v-list-item>
 
-        <v-list-item @click="logout">
+        <v-list-item @click="Pagelogout">
           <v-list-item-icon>
             <v-icon color="red">mdi-logout</v-icon>
           </v-list-item-icon>
@@ -79,6 +79,7 @@
 </template>
 
 <script>
+import { mapActions } from "vuex";
 export default {
   name: "AppTopbar",
   data() {
@@ -94,10 +95,13 @@ export default {
       return this.admin.name.charAt(0).toUpperCase();
     },
   },
+
   methods: {
     onSearch(val) {
       this.$store.commit("SET_SEARCH", val);
     },
+
+    ...mapActions(["logout"]),
 
     changeLang(lang) {
       console.log("Language changed to:", lang);
@@ -106,9 +110,11 @@ export default {
     openProfile() {
       alert("Open admin profile");
     },
-    logout() {
-      alert("Logging out...");
+
+    Pagelogout() {
+      // alert("Logging out...");
+      this.logout();
     },
-  },
+  }, 
 };
 </script>

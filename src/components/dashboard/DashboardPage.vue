@@ -11,7 +11,7 @@
     </v-card>
 
     
-    <StudentTable />
+    <StudentTable/>
   </v-container>
 </template>
 
@@ -27,6 +27,7 @@ export default {
       totalStudents: state => state.students.length
     })
   }
+  
 }
 </script>
 

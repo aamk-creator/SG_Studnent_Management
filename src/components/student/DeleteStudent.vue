@@ -2,10 +2,10 @@
   <v-container fluid>
     <v-card>
       <v-card-title class="d-flex justify-space-between align-center">
-        <v-chip color="green" variant="flat"> Students List </v-chip>
+        <v-chip color="green" variant="flat">Students List</v-chip>
 
         <v-btn
-          color="red darken-1"
+          color="red"
           :disabled="selected.length === 0"
           @click="openConfirm"
         >
@@ -22,32 +22,24 @@
       />
     </v-card>
 
-    <v-dialog
-      v-model="confirmDialog"
-      max-width="420"
-      scrollable
-      @click:outside="closeDialog"
-    >
+    <!-- Confirm Dialog -->
+    <v-dialog v-model="confirmDialog" max-width="420">
       <v-card>
-        <v-card-title class="headline"> Confirm Delete </v-card-title>
+        <v-card-title>Confirm Delete</v-card-title>
 
         <v-card-text>
           Are you sure you want to delete
           <strong>{{ selected.length }}</strong> student(s)?
-          <br />
-          This action cannot be undone.
         </v-card-text>
 
         <v-card-actions class="justify-end">
-          <v-btn text @click="closeDialog"> Cancel </v-btn>
-
-          <v-btn color="red darken-1" @click="confirmDelete">
-            Yes, Delete
-          </v-btn>
+          <v-btn text @click="closeDialog">Cancel</v-btn>
+          <v-btn color="red" @click="confirmDelete">Yes, Delete</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
 
+    <!-- Snackbar -->
     <v-snackbar v-model="snackbar" :color="snackbarColor" timeout="3000">
       {{ snackbarText }}
     </v-snackbar>
@@ -55,10 +47,11 @@
 </template>
 
 <script>
-import { mapState, mapMutations } from "vuex";
+import { mapState, mapActions } from "vuex"
 
 export default {
   name: "DeleteStudent",
+
   data() {
     return {
       selected: [],
@@ -69,41 +62,51 @@ export default {
       headers: [
         { text: "ID", value: "id" },
         { text: "Name", value: "name" },
-        { text: "Phone", value: "phone" },
-        { text: "Branch", value: "branch" },
-      ],
-    };
+        { text: "Course", value: "course.name" },
+        { text: "Branch", value: "branch.name" }
+      ]
+    }
   },
+
+  mounted() {
+
+    this.fetchStudents()
+  },
+
   computed: {
-    ...mapState(["students"]),
+    ...mapState("students",{
+      students: state=> state.students
+    })
   },
+
   methods: {
-    ...mapMutations(["DELETE_STUDENTS"]),
+    ...mapActions("students",["fetchStudents","deleteStudents"]),
 
     openConfirm() {
-      if (this.selected.length === 0) return;
-      this.confirmDialog = true;
+      this.confirmDialog = true
     },
 
     closeDialog() {
-      this.confirmDialog = false;
+      this.confirmDialog = false
     },
 
-    confirmDelete() {
-      const ids = this.selected.map((s) => s.id);
-      if (!ids.length) return;
+    async confirmDelete() {
+      const ids = this.selected.map(s => s.id)
 
-      this.DELETE_STUDENTS(ids);
+      try {
+        await this.deleteStudents(ids)
 
-      this.snackbarText = `${ids.length} student(s) deleted successfully.`;
-      this.snackbarColor = "success";
-      this.snackbar = true;
+        this.snackbarText = `${ids.length} student(s) deleted successfully`
+        this.snackbarColor = "success"
+      } catch (e) {
+        this.snackbarText = "Delete failed"
+        this.snackbarColor = "error"
+      }
 
-      this.selected = [];
-      this.closeDialog();
-
-      this.$emit("close-dialog");
-    },
-  },
-};
+      this.snackbar = true
+      this.selected = []
+      this.closeDialog()
+    }
+  }
+}
 </script>

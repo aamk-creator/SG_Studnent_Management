@@ -1,105 +1,78 @@
 <template>
   <v-container fluid>
-    <v-card>
-      <v-toolbar flat color="green" dark rounded class="max-w-md mx-auto">
+    <v-card class="max-w-md mx-auto">
+      <!-- Header -->
+      <v-toolbar color="blue darken-2" dark flat>
         <v-toolbar-title>
-          <v-icon left>mdi-pencil</v-icon>
-          Edit Student Info
+          <v-icon class="mr-2">mdi-account-edit-outline</v-icon>
+          Edit Student
         </v-toolbar-title>
       </v-toolbar>
 
       <v-card-text>
         <v-form ref="form" v-model="valid">
-          <v-col cols="12" class="py-3 small-text">
-            <v-text-field
-              v-model="studentData.name"
-              label="Student Name"
-              prepend-inner-icon="mdi-format-letter-case"
-              :rules="[(v) => !!v || 'Required']"
-              dense
-              hide-details
-              class="line-input"
-            />
-          </v-col>
+          <!-- Student Code -->
+          <v-text-field
+            label="Student Code"
+            v-model="studentForm.code"
+            :rules="[v => !!v || 'Required']"
+            prepend-icon="mdi-identifier"
+          />
 
-          <v-col cols="12" class="py-3 small-text">
-            <v-text-field
-              v-model="studentData.phone"
-              label="Phone Number"
-              prepend-inner-icon="mdi-phone"
-              :rules="[(v) => !!v || 'Required']"
-              dense
-              hide-details
-              class="line-input"
-            />
-          </v-col>
+          <!-- Student Name -->
+          <v-text-field
+            label="Student Name"
+            v-model="studentForm.name"
+            :rules="[v => !!v || 'Required']"
+            prepend-icon="mdi-account"
+          />
 
-          <v-col cols="12" class="py-3 small-text">
-            <v-text-field
-              v-model="studentData.address"
-              label="Address"
-              prepend-inner-icon="mdi-map-marker-outline"
-              dense
-              hide-details
-              class="line-input"
-            />
-          </v-col>
+          <!-- Course -->
+          <v-select
+            label="Course"
+            :items="courses"
+            item-text="name"
+            item-value="id"
+            v-model="studentForm.course_id"
+            :rules="[v => !!v || 'Required']"
+            prepend-icon="mdi-book"
+          />
 
-          <v-col cols="12" class="py-3 small-text">
-            <v-text-field
-              v-model="studentData.branch"
-              label="Branch Name"
-              prepend-inner-icon="mdi-source-branch"
-              dense
-              hide-details
-              class="line-input"
-            />
-          </v-col>
+          <!-- Branch -->
+          <v-select
+            label="Branch"
+            :items="branches"
+            item-text="name"
+            item-value="id"
+            v-model="studentForm.branch_id"
+            :rules="[v => !!v || 'Required']"
+            prepend-icon="mdi-source-branch"
+          />
 
-          <v-col cols="12" class="py-3 small-text">
-            <v-select
-              v-model="studentData.subjects"
-              :items="availableSubjects"
-              label="Subjects"
-              prepend-inner-icon="mdi-book-open-page-variant"
-              multiple
-              chips
-              dense
-              hide-details
-              class="line-input"
-            />
-          </v-col>
-
-          <v-col cols="12" class="py-3 small-text">
-            <v-select
-              v-model="studentData.status"
-              :items="['pending', 'complete']"
-              label="Status"
-              prepend-inner-icon="mdi-flag"
-              dense
-              hide-details
-              class="line-input"
-            />
-          </v-col>
+          <!-- Status -->
+          <v-select
+            label="Status"
+            :items="['active', 'inactive']"
+            v-model="studentForm.status"
+            :rules="[v => !!v || 'Required']"
+          />
         </v-form>
       </v-card-text>
 
-      <v-divider class="my-4" />
+      <v-divider />
 
+      <!-- Actions -->
       <v-card-actions>
         <v-spacer />
-        <v-btn outlined rounded color="grey darken-1" @click="closeDialog">
-          Cancel
-        </v-btn>
-
+        <v-btn text @click="$emit('close-dialog')">Cancel</v-btn>
         <v-btn
-          outlined
-          rounded
           color="blue darken-2"
-          :disabled="!valid"
-          @click="updateStudent"
+          dark
+          :loading="loading"
+          :disabled="!valid || loading"
+          @click="submitForm"
         >
-          Save
+          Save Changes
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -107,78 +80,93 @@
 </template>
 
 <script>
-import { mapMutations } from "vuex";
+import { mapActions } from "vuex";
+import axios from "axios";
 
 export default {
   name: "EditStudent",
+
   props: {
     student: {
       type: Object,
       required: true,
     },
   },
+
   data() {
     return {
       valid: false,
-      studentData: { ...this.student },
-      availableSubjects: [
-        "Programming Fundamentals",
-        "Data Structures",
-        "Algorithms",
-        "Database Systems",
-        "Computer Networks",
-        "Operating Systems",
-      ],
+      loading: false,
+      studentForm: {
+        id: this.student.id || null,
+        code: this.student.code || "",
+        name: this.student.name || "",
+        course_id: this.student.course ? this.student.course.id : null,
+        branch_id: this.student.branch ? this.student.branch.id : null,
+        status: this.student.status || "active",
+      },
+      courses: [],
+      branches: [],
     };
   },
+
+  watch: {
+    student(newVal) {
+      this.studentForm = {
+        id: newVal.id || null,
+        code: newVal.code || "",
+        name: newVal.name || "",
+        course_id: newVal.course ? newVal.course.id : null,
+        branch_id: newVal.branch ? newVal.branch.id : null,
+        status: newVal.status || "active",
+      };
+    },
+  },
+
   methods: {
-    ...mapMutations(["UPDATE_STUDENT"]), //add mutations to store
+    ...mapActions("students", ["updateStudent"]),
 
-    closeDialog() {
-      this.$emit("close-dialog", false);
+    async fetchCourses() {
+      try {
+        const res = await axios.get("/courses");
+        this.courses = res.data.data || [];
+      } catch (err) {
+        console.error("Fetch courses failed", err);
+      }
     },
 
-    updateStudent() {
-      if (!this.$refs.form.validate()) return;
-
-      this.UPDATE_STUDENT(this.studentData);
-
-      this.closeDialog();
+    async fetchBranches() {
+      try {
+        const res = await axios.get("/branches");
+        this.branches = res.data.data || [];
+      } catch (err) {
+        console.error("Fetch branches failed", err);
+      }
     },
+
+    async submitForm() {
+      const valid = await this.$refs.form.validate();
+      if (!valid) return;
+
+      this.loading = true;
+      try {
+        // Update the student in Vuex and backend
+        await this.updateStudent(this.studentForm);
+
+        // Notify parent to refresh table
+        this.$emit("student-updated");
+        this.$emit("close-dialog");
+      } catch (err) {
+        console.error("Edit student failed:", err.response || err);
+      } finally {
+        this.loading = false;
+      }
+    },
+  },
+
+  mounted() {
+    this.fetchCourses();
+    this.fetchBranches();
   },
 };
 </script>
-
-<style scoped>
-.line-input .v-input__control {
-  background: transparent;
-}
-
-.line-input .v-input__slot::before {
-  border-bottom: 1px solid #bdbdbd;
-}
-
-.line-input.v-input--has-state .v-input__slot::after {
-  border-bottom: 2px solid #2196f3;
-}
-
-.line-input .v-label {
-  font-size: 12px;
-  letter-spacing: 1px;
-  color: #9e9e9e;
-}
-
-.line-input .v-icon {
-  color: #2196f3;
-}
-
-.small-text .v-label,
-.small-text .v-input__slot {
-  font-size: 0.8rem;
-}
-
-.v-col.py-3 {
-  padding-top: 12px !important;
-  padding-bottom: 12px !important;
-}
-</style>

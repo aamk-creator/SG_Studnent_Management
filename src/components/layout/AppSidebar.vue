@@ -3,7 +3,7 @@
     v-model="drawer"
     :mini-variant="mini"
     app
-    clipped
+    clipped permanent
   >
     <v-list dense nav>
 

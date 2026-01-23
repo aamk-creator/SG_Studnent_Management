@@ -1,21 +1,24 @@
 import Vue from "vue";
 import Vuex from "vuex";
-import axios from "axios";
+import axios from "../plugins/axios";
+import students from "./modules/students";
+import studentAuth from "./modules/studentAuth";
+import studentCourses from "./modules/studentCourses";
+import studentCertificates from "./modules/studentCertificates";
 
 Vue.use(Vuex);
 
-axios.defaults.baseURL = "http://127.0.0.1:8000/api";
+const store = new Vuex.Store({
+  modules: {
+    students,
+    studentAuth,
+    studentCourses,
+    studentCertificates,
+  },
 
-
-const token = localStorage.getItem("token");
-if (token) {
-  axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-}
-
-export default new Vuex.Store({
   state: {
     user: null,
-    token: token || null,
+    token: localStorage.getItem("token"),
     loading: false,
     error: null,
   },
@@ -23,10 +26,13 @@ export default new Vuex.Store({
   getters: {
     isAuthenticated: (state) => !!state.token,
     currentUser: (state) => state.user,
+    loading: (state) => state.loading,
+    error: (state) => state.error,
   },
 
   mutations: {
     SET_LOADING(state, value) {
+      
       state.loading = value;
     },
     SET_USER(state, user) {
@@ -46,27 +52,27 @@ export default new Vuex.Store({
   },
 
   actions: {
-    async login({ commit }, { email, password }) {
+    async login({ commit, dispatch }, { email, password }) {
       commit("SET_LOADING", true);
       commit("SET_ERROR", null);
 
       try {
         const res = await axios.post("/login", { email, password });
 
-        
         if (!res.data.status) {
           commit("SET_ERROR", res.data.message || "Login failed");
           return;
         }
 
         const token = res.data.token;
+
+        // Save user + token
+        localStorage.setItem("token", token);
         commit("SET_USER", res.data.user);
         commit("SET_TOKEN", token);
 
-   
-        localStorage.setItem("token", token);
-
-        axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+        // Fetch students after login
+        await dispatch("students/fetchStudents", null, { root: true });
       } catch (err) {
         commit("SET_ERROR", err.response?.data?.message || "Login failed");
       } finally {
@@ -74,10 +80,26 @@ export default new Vuex.Store({
       }
     },
 
-    logout({ commit }) {
-      localStorage.removeItem("token");
-      delete axios.defaults.headers.common["Authorization"];
-      commit("LOGOUT");
+    async logout({ commit }) {
+      try {
+        await axios.post("/logout");
+      } catch (e) {
+        console.error("Logout API failed", e);
+      } finally {
+        localStorage.removeItem("token");
+        commit("LOGOUT");
+      }
+    },
+
+    // Auto-fetch students if token exists (on refresh)
+    async autoLogin({ commit, dispatch }) {
+      const token = localStorage.getItem("token");
+      if (token) {
+        commit("SET_TOKEN", token);
+        await dispatch("students/fetchStudents", null, { root: true });
+      }
     },
   },
 });
+
+export default store;

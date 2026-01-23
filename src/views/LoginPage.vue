@@ -84,16 +84,19 @@ export default {
   methods: {
     ...mapActions(["login"]),
 
-    async submitLogin() {
-      if (!this.email || !this.password) return;
+   async submitLogin() {
+  if (!this.email || !this.password) return;
 
-      await this.login({ email: this.email, password: this.password });
+  const success = await this.login({
+    email: this.email,
+    password: this.password,
+  });
 
-      if (!this.error) {
-        // Emit to parent that login succeeded
-        this.$emit("login-success");
-      }
-    },
+  if (success) {
+    this.$emit("login-success");
+  }
+}
+
   },
 };
 </script>

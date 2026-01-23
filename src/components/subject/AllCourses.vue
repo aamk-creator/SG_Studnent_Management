@@ -16,7 +16,7 @@
           <v-text-field
             label="Branch Name"
             v-model="newBranch.name"
-            :rules="[v => !!v || 'Branch name is required']"
+            :rules="[(v) => !!v || 'Branch name is required']"
             outlined
           />
           <v-btn
@@ -30,6 +30,7 @@
           </v-btn>
         </v-form>
       </v-card-text>
+
       <v-data-table
         :headers="branchHeaders"
         :items="branches"
@@ -38,7 +39,7 @@
         class="elevation-1"
       >
         <template v-slot:[`item.actions`]="{ item }">
-          <v-btn icon color="red" @click="deleteBranch(item.id)">
+          <v-btn icon color="red" @click="confirmDeleteBranch(item)">
             <v-icon>mdi-delete</v-icon>
           </v-btn>
         </template>
@@ -53,14 +54,10 @@
           <v-text-field
             label="Course Name"
             v-model="newCourse.name"
-            :rules="[v => !!v || 'Course name is required']"
+            :rules="[(v) => !!v || 'Course name is required']"
             outlined
           />
-          <v-text-field
-            label="Title"
-            v-model="newCourse.title"
-            outlined
-          />
+          <v-text-field label="Title" v-model="newCourse.title" outlined />
           <v-textarea
             label="Description"
             v-model="newCourse.description"
@@ -72,9 +69,60 @@
             item-text="name"
             item-value="id"
             v-model="newCourse.branch_id"
-            :rules="[v => !!v || 'Branch is required']"
+            :rules="[(v) => !!v || 'Branch is required']"
             outlined
           />
+
+          <!-- Start Date -->
+          <v-menu
+            v-model="startMenu"
+            :close-on-content-click="false"
+            transition="scale-transition"
+            offset-y
+            min-width="auto"
+          >
+            <template v-slot:activator="{ on, attrs }">
+              <v-text-field
+                v-model="newCourse.course_start_at"
+                label="Course Start Date"
+                prepend-icon="mdi-calendar"
+                readonly
+                v-bind="attrs"
+                v-on="on"
+                outlined
+              />
+            </template>
+            <v-date-picker
+              v-model="newCourse.course_start_at"
+              @input="startMenu = false"
+            />
+          </v-menu>
+
+          <!-- End Date -->
+          <v-menu
+            v-model="endMenu"
+            :close-on-content-click="false"
+            transition="scale-transition"
+            offset-y
+            min-width="auto"
+          >
+            <template v-slot:activator="{ on, attrs }">
+              <v-text-field
+                v-model="newCourse.course_end_at"
+                label="Course End Date"
+                prepend-icon="mdi-calendar"
+                readonly
+                v-bind="attrs"
+                v-on="on"
+                outlined
+              />
+            </template>
+            <v-date-picker
+              v-model="newCourse.course_end_at"
+              @input="endMenu = false"
+            />
+          </v-menu>
+
           <v-btn
             color="primary"
             :disabled="!validCourse || loadingCourse"
@@ -86,6 +134,7 @@
           </v-btn>
         </v-form>
       </v-card-text>
+
       <v-data-table
         :headers="courseHeaders"
         :items="courses"
@@ -93,13 +142,72 @@
         :items-per-page="5"
         class="elevation-1"
       >
+        <template v-slot:[`item.course_start_at`]="{ item }">
+          {{ formatDate(item.course_start_at) }}
+        </template>
+        <template v-slot:[`item.course_end_at`]="{ item }">
+          {{ formatDate(item.course_end_at) }}
+        </template>
+
         <template v-slot:[`item.actions`]="{ item }">
-          <v-btn icon color="red" @click="deleteCourse(item.id)">
+          <v-btn icon color="red" @click="confirmDeleteCourse(item)">
             <v-icon>mdi-delete</v-icon>
+          </v-btn>
+          <v-btn icon color="green" @click="openCourseModal(item)">
+            <v-icon>mdi-certificate</v-icon>
           </v-btn>
         </template>
       </v-data-table>
     </v-card>
+
+    <!-- Issue Certificate Modal -->
+    <v-dialog v-model="courseModal" max-width="600">
+      <v-card>
+        <v-card-title class="headline">
+          Issue Courses Certificate - {{ selectedCourse?.name }}
+        </v-card-title>
+        <v-card-text>
+          <v-data-table
+            :headers="studentHeaders"
+            :items="courseStudents"
+            item-key="id"
+            class="elevation-1"
+          >
+            <template v-slot:[`item.course_start_at`]="{ item }">
+              {{ formatDate(item.course_start_at) }}
+            </template>
+            <template v-slot:[`item.course_end_at`]="{ item }">
+              {{ formatDate(item.course_end_at) }}
+            </template>
+            <template v-slot:[`item.actions`]="{ item }">
+              <v-btn color="primary" small @click="issueCertificate(item)">
+                Issue
+              </v-btn>
+            </template>
+          </v-data-table>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn text color="grey" @click="closeCourseModal">Close</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Delete Confirmation Dialog -->
+    <v-dialog v-model="confirmDeleteDialog" max-width="400">
+      <v-card>
+        <v-card-title class="headline">Confirm Delete</v-card-title>
+        <v-card-text>
+          Are you sure you want to delete
+          <strong>{{ itemToDelete?.name }}</strong>?
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn text color="grey" @click="cancelDelete">Cancel</v-btn>
+          <v-btn color="red" @click="performDelete">Delete</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <!-- Snackbar -->
     <v-snackbar v-model="snackbar" :color="snackbarColor" timeout="3000">
@@ -109,13 +217,13 @@
 </template>
 
 <script>
-import axios from "axios";
+import axios from "@/plugins/axios";
 
 export default {
-  name: "AllCoursesAndBranches",
+  name: "AllCourses",
   data() {
     return {
-      /* ---------- Branch ---------- */
+      /* Branch */
       validBranch: false,
       loadingBranch: false,
       newBranch: { name: "" },
@@ -125,36 +233,69 @@ export default {
         { text: "Actions", value: "actions", sortable: false },
       ],
 
-      /* ---------- Course ---------- */
+      /* Course */
       validCourse: false,
       loadingCourse: false,
-      newCourse: { name: "", title: "", description: "", branch_id: null },
+      newCourse: {
+        name: "",
+        title: "",
+        description: "",
+        branch_id: null,
+        course_start_at: null,
+        course_end_at: null,
+      },
+      startMenu: false,
+      endMenu: false,
       courses: [],
       courseHeaders: [
         { text: "Course Name", value: "name" },
         { text: "Title", value: "title" },
         { text: "Description", value: "description" },
         { text: "Branch", value: "branch.name" },
+        { text: "Start Date", value: "course_start_at" },
+        { text: "End Date", value: "course_end_at" },
         { text: "Actions", value: "actions", sortable: false },
       ],
 
-      /* ---------- Snackbar ---------- */
+      /* Students */
+      courseModal: false,
+      selectedCourse: null,
+      courseStudents: [],
+      studentHeaders: [
+        { text: "ID", value: "id" },
+        { text: "Name", value: "name" },
+        { text: "Email", value: "email" },
+        { text: "Start Date", value: "course_start_at" },
+        { text: "End Date", value: "course_end_at" },
+        { text: "Actions", value: "actions", sortable: false },
+      ],
+
+      /* Delete */
+      confirmDeleteDialog: false,
+      itemToDelete: null,
+      deleteType: null,
+
+      /* Snackbar */
       snackbar: false,
       snackbarText: "",
       snackbarColor: "success",
     };
   },
   methods: {
-    /* ---------- Branch Methods ---------- */
+    // Format date
+    formatDate(date) {
+      return date ? new Date(date).toLocaleDateString() : "-";
+    },
+
+    /* Branch Methods */
     async fetchBranches() {
       try {
         const res = await axios.get("/branches");
         this.branches = res.data.data || [];
-        if (this.branches.length && !this.newCourse.branch_id) {
+        if (this.branches.length && !this.newCourse.branch_id)
           this.newCourse.branch_id = this.branches[0].id;
-        }
       } catch (err) {
-        console.error("Fetch branches failed:", err);
+        console.error(err);
         this.showSnackbar("Failed to fetch branches", "error");
       }
     },
@@ -163,42 +304,28 @@ export default {
       this.loadingBranch = true;
       try {
         const res = await axios.post("/branches", this.newBranch);
-        this.branches.push(res.data);
-        this.showSnackbar(`Branch "${res.data.name}" added`, "success");
+        this.branches.push(res.data.data || res.data);
         this.newBranch.name = "";
         this.validBranch = false;
-        if (!this.newCourse.branch_id) {
-          this.newCourse.branch_id = res.data.id;
-        }
+        this.showSnackbar("Branch added", "success");
       } catch (err) {
-        console.error("Add branch failed:", err.response || err);
-        const msg = err.response?.data?.message || "Failed to add branch";
-        this.showSnackbar(msg, "error");
+        console.error(err);
+        this.showSnackbar(
+          err.response?.data?.message || "Failed to add branch",
+          "error"
+        );
       } finally {
         this.loadingBranch = false;
       }
     },
-    async deleteBranch(id) {
-      try {
-        await axios.delete(`/branches/${id}`);
-        this.branches = this.branches.filter(b => b.id !== id);
-        this.showSnackbar("Branch deleted", "error");
-        if (this.newCourse.branch_id === id) {
-          this.newCourse.branch_id = this.branches.length ? this.branches[0].id : null;
-        }
-      } catch (err) {
-        console.error("Delete branch failed:", err);
-        this.showSnackbar("Failed to delete branch", "error");
-      }
-    },
 
-    /* ---------- Course Methods ---------- */
+    /* Course Methods */
     async fetchCourses() {
       try {
         const res = await axios.get("/courses");
         this.courses = res.data.data || [];
       } catch (err) {
-        console.error("Fetch courses failed:", err);
+        console.error(err);
         this.showSnackbar("Failed to fetch courses", "error");
       }
     },
@@ -207,43 +334,104 @@ export default {
       this.loadingCourse = true;
       try {
         const res = await axios.post("/courses", this.newCourse);
-        this.courses.push(res.data);
-        this.showSnackbar(`Course "${res.data.name}" added`, "success");
-
-        // Reset form, auto-select first branch
+        this.courses.push(res.data.data || res.data);
         this.newCourse = {
           name: "",
           title: "",
           description: "",
           branch_id: this.branches.length ? this.branches[0].id : null,
+          course_start_at: null,
+          course_end_at: null,
         };
         this.validCourse = false;
+        this.showSnackbar("Course added", "success");
       } catch (err) {
-        console.error("Add course failed:", err.response || err);
-        const msg = err.response?.data?.message || "Failed to add course";
-        this.showSnackbar(msg, "error");
+        console.error(err);
+        this.showSnackbar(
+          err.response?.data?.message || "Failed to add course",
+          "error"
+        );
       } finally {
         this.loadingCourse = false;
       }
     },
-    async deleteCourse(id) {
+
+    /* Delete Methods */
+    confirmDeleteBranch(branch) {
+      this.itemToDelete = branch;
+      this.deleteType = "branch";
+      this.confirmDeleteDialog = true;
+    },
+    confirmDeleteCourse(course) {
+      this.itemToDelete = course;
+      this.deleteType = "course";
+      this.confirmDeleteDialog = true;
+    },
+    cancelDelete() {
+      this.itemToDelete = null;
+      this.deleteType = null;
+      this.confirmDeleteDialog = false;
+    },
+    async performDelete() {
+      if (!this.itemToDelete || !this.deleteType) return;
       try {
-        await axios.delete(`/courses/${id}`);
-        this.courses = this.courses.filter(c => c.id !== id);
-        this.showSnackbar("Course deleted", "error");
+        if (this.deleteType === "branch") {
+          await axios.delete(`/branches/${this.itemToDelete.id}`);
+          this.branches = this.branches.filter((b) => b.id !== this.itemToDelete.id);
+        } else if (this.deleteType === "course") {
+          await axios.delete(`/courses/${this.itemToDelete.id}`);
+          this.courses = this.courses.filter((c) => c.id !== this.itemToDelete.id);
+        }
+        this.showSnackbar("Deleted successfully", "success");
       } catch (err) {
-        console.error("Delete course failed:", err);
-        this.showSnackbar("Failed to delete course", "error");
+        console.error(err);
+        this.showSnackbar("Failed to delete", "error");
+      } finally {
+        this.cancelDelete();
       }
     },
 
-    /* ---------- Snackbar ---------- */
+    /* Students Modal */
+    openCourseModal(course) {
+      this.selectedCourse = course;
+      this.courseModal = true;
+      this.fetchCourseStudents(course.id);
+    },
+    closeCourseModal() {
+      this.selectedCourse = null;
+      this.courseStudents = [];
+      this.courseModal = false;
+    },
+    async fetchCourseStudents(courseId) {
+      try {
+        const res = await axios.get(`/courses/${courseId}/students`);
+        this.courseStudents = res.data.data || [];
+      } catch (err) {
+        console.error(err);
+        this.showSnackbar("Failed to fetch students", "error");
+      }
+    },
+    async issueCertificate(student) {
+      try {
+        await axios.post("/certificates", {
+          student_id: student.id,
+          course_id: this.selectedCourse.id,
+        });
+        this.showSnackbar(`Certificate issued to "${student.name}"`);
+      } catch (err) {
+        console.error(err);
+        this.showSnackbar("Failed to issue certificate", "error");
+      }
+    },
+
+    /* Snackbar */
     showSnackbar(message, color = "success") {
       this.snackbarText = message;
       this.snackbarColor = color;
       this.snackbar = true;
     },
   },
+
   mounted() {
     this.fetchBranches();
     this.fetchCourses();

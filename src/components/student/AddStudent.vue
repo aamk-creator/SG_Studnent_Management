@@ -56,7 +56,7 @@
       <!-- Actions -->
       <v-card-actions>
         <v-spacer />
-        <v-btn text @click="resetForm">Cancel</v-btn>
+        <v-btn text @click="closeDialog">Cancel</v-btn>
         <v-btn
           color="green darken-2"
           dark
@@ -73,6 +73,7 @@
 
 <script>
 import axios from "axios";
+import { mapActions } from "vuex";
 
 export default {
   name: "AddStudent",
@@ -81,28 +82,37 @@ export default {
     return {
       valid: false,
       loading: false,
-
       student: {
         code: "",
         name: "",
         course_id: null,
         branch_id: null,
       },
-
       courses: [],
       branches: [],
     };
   },
 
   methods: {
+    
+    ...mapActions("students", ["addStudent"]),
+
     async fetchCourses() {
-      const res = await axios.get("/courses");
-      this.courses = res.data.data || [];
+      try {
+        const res = await axios.get("/courses");
+        this.courses = res.data.data || [];
+      } catch (err) {
+        console.error("Fetch courses failed:", err);
+      }
     },
 
     async fetchBranches() {
-      const res = await axios.get("/branches");
-      this.branches = res.data.data || [];
+      try {
+        const res = await axios.get("/branches");
+        this.branches = res.data.data || [];
+      } catch (err) {
+        console.error("Fetch branches failed:", err);
+      }
     },
 
     async submitForm() {
@@ -111,13 +121,17 @@ export default {
 
       this.loading = true;
       try {
-        await axios.post("/students", {
+        //AUTO table update)
+        await this.addStudent({
           ...this.student,
-          user_id: 1, // TEMP admin user
+          user_id: 1, // temp admin user
         });
+
+        // Close dialog & reset
+        this.closeDialog();
         this.resetForm();
       } catch (err) {
-        console.error("Add student failed:", err.response || err);
+        console.error("Add student failed:", err);
       } finally {
         this.loading = false;
       }
@@ -131,6 +145,10 @@ export default {
         branch_id: null,
       };
       this.$refs.form.resetValidation();
+    },
+
+    closeDialog() {
+      this.$emit("close-dialog");
     },
   },
 
