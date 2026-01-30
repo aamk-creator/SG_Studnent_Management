@@ -15,7 +15,7 @@
           <v-text-field
             label="Student Code"
             v-model="student.code"
-            :rules="[v => !!v || 'Required']"
+            :rules="[(v) => !!v || 'Required']"
             prepend-icon="mdi-identifier"
           />
 
@@ -23,8 +23,39 @@
           <v-text-field
             label="Student Name"
             v-model="student.name"
-            :rules="[v => !!v || 'Required']"
+            :rules="[(v) => !!v || 'Required']"
             prepend-icon="mdi-account"
+          />
+
+          <!-- Email -->
+          <v-text-field
+            label="Email"
+            v-model="student.email"
+            :rules="[
+              (v) => !!v || 'Required',
+              (v) => /.+@.+\..+/.test(v) || 'Email must be valid',
+            ]"
+            prepend-icon="mdi-email"
+          />
+
+          <!-- Phone -->
+          <v-text-field
+            label="Phone"
+            v-model="student.phone"
+            :rules="[(v) => !!v || 'Required']"
+            prepend-icon="mdi-phone"
+          />
+
+          <!-- Password -->
+          <v-text-field
+            label="Password"
+            v-model="student.password"
+            :rules="[
+              (v) => !!v || 'Required',
+              (v) => v.length >= 6 || 'Password must be at least 6 characters',
+            ]"
+            prepend-icon="mdi-lock"
+            type="password"
           />
 
           <!-- Course -->
@@ -34,7 +65,7 @@
             item-text="name"
             item-value="id"
             v-model="student.course_id"
-            :rules="[v => !!v || 'Required']"
+            :rules="[(v) => !!v || 'Required']"
             prepend-icon="mdi-book"
           />
 
@@ -45,7 +76,7 @@
             item-text="name"
             item-value="id"
             v-model="student.branch_id"
-            :rules="[v => !!v || 'Required']"
+            :rules="[(v) => !!v || 'Required']"
             prepend-icon="mdi-source-branch"
           />
         </v-form>
@@ -85,6 +116,9 @@ export default {
       student: {
         code: "",
         name: "",
+        email: "",
+        phone: "",
+         password: "",
         course_id: null,
         branch_id: null,
       },
@@ -94,7 +128,6 @@ export default {
   },
 
   methods: {
-    
     ...mapActions("students", ["addStudent"]),
 
     async fetchCourses() {
@@ -141,6 +174,9 @@ export default {
       this.student = {
         code: "",
         name: "",
+        email: "",
+        phone: "",
+        password: "",
         course_id: null,
         branch_id: null,
       };

@@ -1,48 +1,53 @@
 <template>
-  <v-card>
-    <!-- Toolbar with Search & Filter -->
-    <v-toolbar flat color="white">
-      <!-- Title with total number of students -->
-      <v-toolbar-title>
-        All Students List ({{ allStudents.length }})
-      </v-toolbar-title>
+  <v-card class="rounded-xl border-0 elevation-0 transparent">
+    <!-- Header -->
+    <v-row no-gutters align="center" class="pa-4 white rounded-t-xl border-bottom">
+      <div class="d-flex align-center mr-6">
+        <v-avatar size="40" color="primary lighten-5" class="mr-3">
+          <v-icon color="primary" small>mdi-account-group</v-icon>
+        </v-avatar>
+        <span class="text-h6 font-weight-black grey--text text--darken-3">
+          Total Students <span class="primary--text ml-1">{{ allStudents.length }}</span>
+        </span>
+      </div>
+
       <v-spacer />
 
-      <!-- Search input -->
+      <!-- Search -->
       <v-text-field
         v-model="search"
-        append-icon="mdi-magnify"
-        label="Search students...."
-        single-line
-        hide-details
+        prepend-inner-icon="mdi-magnify"
+        placeholder="Search students..."
+        flat solo hide-details
         dense
-        class="mr-3"
-      ></v-text-field>
+        background-color="grey lighten-4"
+        class="rounded-pill mr-4 shadow-sm"
+        style="max-width: 300px"
+      />
 
-      <!-- Single filter dropdown -->
+      <!-- Filter -->
       <v-select
         v-model="filterType"
         :items="filterOptions"
-        label="Filter"
-        dense
-        outlined
-        hide-details
-        style="max-width: 180px"
-      ></v-select>
+        placeholder="Filter By"
+        flat solo hide-details dense
+        background-color="grey lighten-4"
+        class="rounded-l-pill shadow-sm"
+        style="max-width: 140px"
+        prepend-inner-icon="mdi-filter-variant"
+      />
 
-      <!-- Value select appears only if filter chosen -->
       <v-select
         v-if="filterType && filterType !== 'All'"
         v-model="filterValue"
         :items="getFilterItems"
-        dense
-        outlined
-        hide-details
-        style="max-width: 180px"
-      ></v-select>
-    </v-toolbar>
-
-    <v-divider />
+        placeholder="Select Value"
+        flat solo hide-details dense
+        background-color="grey lighten-4"
+        class="rounded-r-pill shadow-sm border-left"
+        style="max-width: 160px"
+      />
+    </v-row>
 
     <!-- Data Table -->
     <v-data-table
@@ -51,73 +56,87 @@
       :search="search"
       :items-per-page="perPage"
       :page.sync="localPage"
-      item-key="id"
-      dense
       hide-default-footer
+      class="custom-modern-table"
     >
-      <!-- Course column -->
-      <template slot="item.course" slot-scope="props">
-        {{ props.item.course ? props.item.course.name : '-' }}
+      <!-- Course -->
+      <template v-slot:[`item.course`]="{ item }">
+        <span class="font-weight-medium grey--text text--darken-2">
+          {{ item.course ? item.course.name : '-' }}
+        </span>
       </template>
 
-      <!-- Branch column -->
-      <template slot="item.branch" slot-scope="props">
-        {{ props.item.branch ? props.item.branch.name : '-' }}
-      </template>
-
-      <!-- Status column -->
-      <template slot="item.status" slot-scope="props">
-        <v-chip
-          small
-          :color="props.item.status === 'active' ? 'green' : 'orange'"
-          dark
-        >
-          {{ props.item.status }}
+      <!-- Branch -->
+      <template v-slot:[`item.branch`]="{ item }">
+        <v-chip x-small outlined color="blue-grey lighten-1" class="font-weight-bold">
+          {{ item.branch ? item.branch.name : '-' }}
         </v-chip>
       </template>
 
-      <!-- Actions column -->
-      <template slot="item.actions" slot-scope="props">
-        <!-- SINGLE DELETE BUTTON -->
-        <v-btn
-          icon
+      <!-- Status -->
+      <template v-slot:[`item.status`]="{ item }">
+        <v-chip
           small
-          color="red"
-          @click="openDeleteDialog(props.item)"
+          :color="item.status === 'active' ? 'green lighten-5' : 'orange lighten-5'"
+          :class="item.status === 'active' ? 'green--text text--darken-2' : 'orange--text text--darken-2'"
+          class="font-weight-black px-4"
         >
-          <v-icon>mdi-delete</v-icon>
-        </v-btn>
+          <v-badge
+            dot inline left
+            :color="item.status === 'active' ? 'green' : 'orange'"
+            class="mr-1"
+          />
+          {{ item.status.toUpperCase() }}
+        </v-chip>
+      </template>
 
-        <!-- EDIT BUTTON -->
-        <v-btn
-          icon
-          small
-          color="blue"
-          @click="editStudent(props.item)"
-        >
-          <v-icon>mdi-pencil</v-icon>
+      <!-- Password with Eye Toggle -->
+      <template v-slot:[`item.password`]="{ item }">
+        <div class="d-flex align-center">
+          <span>{{ showPassword[item.id] ? item.plain_password : '••••••' }}</span>
+          <v-icon
+            small
+            class="ml-2 cursor-pointer"
+            @click="togglePassword(item.id)"
+          >
+            {{ showPassword[item.id] ? 'mdi-eye-off-outline' : 'mdi-eye-outline' }}
+          </v-icon>
+        </div>
+      </template>
+
+      <!-- Actions -->
+      <template v-slot:[`item.actions`]="{ item }">
+        <v-btn depressed fab x-small color="blue lighten-5" class="mr-2" @click="editStudent(item)">
+          <v-icon small color="blue">mdi-pencil-outline</v-icon>
+        </v-btn>
+        <v-btn depressed fab x-small color="red lighten-5" @click="openDeleteDialog(item)">
+          <v-icon small color="red">mdi-trash-can-outline</v-icon>
         </v-btn>
       </template>
     </v-data-table>
-    
 
     <!-- Pagination -->
-    <v-divider />
-    <v-card-actions class="justify-center">
-      <v-pagination v-model="localPage" :length="pageCount" />
-    </v-card-actions>
+    <div class="white pa-4 rounded-b-xl d-flex align-center justify-center">
+      <v-pagination
+        v-model="localPage"
+        :length="pageCount"
+        circle
+        color="primary"
+        total-visible="7"
+      />
+    </div>
 
-    <!-- Delete Confirmation Dialog -->
+    <!-- Delete Dialog -->
     <v-dialog v-model="confirmDeleteDialog" max-width="400">
-      <v-card>
-        <v-card-title class="headline">Confirm Delete</v-card-title>
-        <v-card-text>
-          Are you sure you want to delete <strong>{{ studentToDelete?.name }}</strong>?
+      <v-card class="rounded-xl pa-4">
+        <v-card-title class="text-h5 font-weight-black red--text">Confirm Delete</v-card-title>
+        <v-card-text class="text-h6 font-weight-regular pt-2">
+          Remove student <span class="font-weight-black">{{ studentToDelete?.name }}</span>? This cannot be undone.
         </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="grey" text @click="cancelDelete">Cancel</v-btn>
-          <v-btn color="red" @click="confirmDelete">Delete</v-btn>
+        <v-card-actions class="pt-4">
+          <v-spacer />
+          <v-btn text color="grey darken-1" class="rounded-pill px-6" @click="cancelDelete">Cancel</v-btn>
+          <v-btn color="red" dark depressed class="rounded-pill px-8" @click="confirmDelete">Delete</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -140,6 +159,9 @@ export default {
         { text: "ID", value: "id" },
         { text: "Code", value: "code" },
         { text: "Name", value: "name" },
+        { text: "Email", value: "email" },
+        { text: "Phone", value: "phone" },
+        { text: "Password", value: "password" }, // show password column
         { text: "Course", value: "course" },
         { text: "Branch", value: "branch" },
         { text: "Status", value: "status" },
@@ -150,6 +172,9 @@ export default {
       // Delete confirmation
       confirmDeleteDialog: false,
       studentToDelete: null,
+
+      // Show/hide password map
+      showPassword: {},
     };
   },
   computed: {
@@ -186,24 +211,20 @@ export default {
   methods: {
     ...mapActions("students", ["fetchStudents", "deleteStudent"]),
 
-    // Emit event to parent for edit
     editStudent(student) {
       this.$emit("edit-student", student);
     },
 
-    // Open delete dialog
     openDeleteDialog(student) {
       this.studentToDelete = student;
       this.confirmDeleteDialog = true;
     },
 
-    // Cancel delete
     cancelDelete() {
       this.studentToDelete = null;
       this.confirmDeleteDialog = false;
     },
 
-    // Confirm delete
     async confirmDelete() {
       if (!this.studentToDelete) return;
 
@@ -216,16 +237,13 @@ export default {
         alert("Failed to delete student");
       }
     },
+
+    togglePassword(studentId) {
+      this.$set(this.showPassword, studentId, !this.showPassword[studentId]);
+    },
   },
   mounted() {
     this.fetchStudents();
   },
 };
 </script>
-
-<style scoped>
-.v-toolbar {
-  padding-left: 8px;
-  padding-right: 14px;
-}
-</style>

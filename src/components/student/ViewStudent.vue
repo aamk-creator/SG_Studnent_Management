@@ -1,104 +1,138 @@
 <template>
-  <v-container fluid>
-    <!-- ACTION CARD -->
-    <v-card class="mb-6 pa-4 elevation-3 rounded-lg">
-      <v-card-title class="d-flex align-center justify-space-between">
-        <div class="d-flex align-center">
-          <v-icon left color="primary" large>
-            mdi-account-multiple-outline
-          </v-icon>
-          <span class="card-title">View All Students</span>
-        </div>
-      </v-card-title>
+  <v-container fluid class="grey lighten-5 py-10 px-12">
+    <v-row align="center" class="mb-10">
+      <v-avatar color="primary lighten-5" size="72" class="mr-5">
+        <v-icon x-large color="primary">mdi-account-group-outline</v-icon>
+      </v-avatar>
+      <div>
+        <h2 class="display-1 font-weight-black grey--text text--darken-4 mb-0">Student Registration</h2>
+        <span class="text-uppercase overline font-weight-bold primary--text">Manage and Monitor student Records</span>
+      </div>
+      <v-spacer />
+      <v-btn color="success" text x-large class="rounded-pill font-weight-bold" @click="exportStudents">
+        <v-icon left>mdi-export-variant</v-icon>
+        Export CSV
+      </v-btn>
+    </v-row>
 
-      <v-card-text class="pb-0">
-        <span>View and manage all student records efficiently.</span>
+    <div class="d-flex align-center mb-3 ml-2">
+      <v-icon small color="primary" class="mr-2">mdi-filter-variant</v-icon>
+      <span class="text-uppercase font-weight-black grey--text text--darken-1 subtitle-2" style="letter-spacing: 1px">
+        Quick Actions & Filters
+      </span>
+    </div>
 
-        <!--         
-        <v-row class="mt-4" dense>
-          <v-col cols="12" sm="6">
-            <v-select
-              label="Filter by Course"
-              :items="courses"
-              item-text="name"
-              item-value="id"
-              v-model="filterCourse"
-              outlined
-              dense
-              clearable
-            />
-          </v-col>
-          <v-col cols="12" sm="6">
-            <v-select
-              label="Filter by Status"
-              :items="['active', 'inactive']"
-              v-model="filterStatus"
-              outlined
-              dense
-              clearable
-            />
-          </v-col>
-        </v-row> -->
-      </v-card-text>
+    <v-card class="rounded-xl elevation-2 mb-12 border-0 overflow-hidden">
+      <v-row no-gutters align="center" class="pa-4 blue-grey lighten-5">
+        <v-col cols="auto" class="mr-4">
+          <v-btn
+            color="primary"
+            dark depressed
+            height="54"
+            class="rounded-pill px-6 font-weight-bold"
+            @click="opencard('add')"
+          >
+            <v-icon left>mdi-account-plus</v-icon>
+            Add Student
+          </v-btn>
+        </v-col>
 
-      <v-card-actions class="pt-2">
-        <v-btn
-          color="primary"
-          rounded
-          small
-          class="mr-3"
-          @click="opencard('add')"
-        >
-          <v-icon left>mdi-account-plus</v-icon>
-          Add Student
-        </v-btn>
+        <v-divider vertical class="mx-2" inset></v-divider>
 
-        <v-btn
-          color="red"
-          rounded
-          small
-          class="mr-3"
-          @click="opencard('delete')"
-        >
-          <v-icon left>mdi-account-remove</v-icon>
-          Delete Student
-        </v-btn>
+        <v-col class="px-2">
+          <v-select
+            v-model="filterCourse"
+            :items="courses"
+            item-text="name"
+            item-value="id"
+            placeholder="Filter by Course"
+            flat solo hide-details
+            clearable
+            background-color="white"
+            class="rounded-lg shadow-sm"
+            prepend-inner-icon="mdi-book-open-outline"
+          />
+        </v-col>
 
-        <v-btn color="green" rounded small @click="exportStudents">
-          <v-icon left>mdi-export</v-icon>
-          Export Students
-        </v-btn>
-      </v-card-actions>
+        <v-col class="px-2">
+          <v-select
+            v-model="filterStatus"
+            :items="['active', 'inactive']"
+            placeholder="Status"
+            flat solo hide-details
+            clearable
+            background-color="white"
+            class="rounded-lg shadow-sm"
+            prepend-inner-icon="mdi-shield-check-outline"
+          />
+        </v-col>
+
+        <v-col cols="auto" class="ml-4">
+          <v-btn
+            color="red lighten-1"
+            outlined
+            height="54"
+            class="rounded-pill font-weight-bold border-2"
+            @click="opencard('delete')"
+          >
+            <v-icon left>mdi-account-remove-outline</v-icon>
+            Remove
+          </v-btn>
+        </v-col>
+      </v-row>
     </v-card>
 
-    <!-- STUDENT TABLE -->
-    <StudentTable
-      :filter-course="filterCourse"
-      :filter-status="filterStatus"
-      @edit-student="openEditStudent"
-    />
+    <div class="d-flex align-center mb-3 ml-2">
+      <v-icon small color="blue-grey" class="mr-2">mdi-format-list-bulleted</v-icon>
+      <span class="text-uppercase font-weight-black grey--text text--darken-1 subtitle-2" style="letter-spacing: 1px">
+        All Students Info
+      </span>
+    </div>
 
-    <!-- DIALOG -->
+    <v-card class="rounded-xl elevation-4 border-0 overflow-hidden">
+      <StudentTable
+        :filter-course="filterCourse"
+        :filter-status="filterStatus"
+        @edit-student="openEditStudent"
+        class="custom-modern-table"
+      />
+    </v-card>
+
     <v-dialog
       v-model="dialog"
       max-width="600px"
       scrollable
+      transition="dialog-bottom-transition"
       @click:outside="cls"
     >
-      <v-card class="rounded-lg">
-        <AddStudent v-if="card === 'add'" @close-dialog="cls" />
-        <DeleteStudent v-if="card === 'delete'" @close-dialog="cls" />
-        <EditStudent
-          v-if="card === 'edit'"
-          :student="selectedStudent"
-          @close-dialog="cls"
-        />
+      <v-card class="rounded-xl overflow-hidden shadow-2xl">
+        <v-toolbar flat color="white" class="px-2">
+          <v-toolbar-title class="font-weight-black grey--text text--darken-4">
+            {{ card === 'add' ? 'New Enrollment' : card === 'edit' ? 'Update Profile' : 'Confirm Removal' }}
+          </v-toolbar-title>
+          <v-spacer></v-spacer>
+          <v-btn icon @click="cls"><v-icon>mdi-close</v-icon></v-btn>
+        </v-toolbar>
+        
+        <v-divider></v-divider>
+        
+        <div class="pa-6">
+          <AddStudent v-if="card === 'add'" @close-dialog="cls" />
+          <DeleteStudent v-if="card === 'delete'" @close-dialog="cls" />
+          <EditStudent
+            v-if="card === 'edit'"
+            :student="selectedStudent"
+            @close-dialog="cls"
+          />
+        </div>
       </v-card>
     </v-dialog>
 
-    <!-- Snackbar -->
-    <v-snackbar v-model="snackbar" :color="snackbarColor" timeout="3000">
-      {{ snackbarText }}
+    <v-snackbar v-model="snackbar" :color="snackbarColor" rounded="pill" elevation="10" timeout="3000">
+      <span class="font-weight-bold">{{ snackbarText }}</span>
+      <template v-slot:action="{ attrs }">
+        <v-btn text v-bind="attrs" @click="snackbar = false" class="rounded-pill">Dismiss</v-btn>
+      </template>
     </v-snackbar>
   </v-container>
 </template>
@@ -227,14 +261,49 @@ export default {
 </script>
 
 <style scoped>
-.card-title {
-  font-weight: 600;
-  font-size: 20px;
+/* High-End Design System */
+.shadow-sm {
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
 }
+
+.border-2 {
+  border-width: 2px !important;
+}
+
+/* Custom Table Styling overrides for the child component */
+.custom-modern-table >>> .v-data-table__wrapper {
+  border-radius: 0 0 24px 24px;
+}
+
+.custom-modern-table >>> thead {
+  background-color: #F8FAFC !important;
+}
+
+.custom-modern-table >>> th {
+  text-transform: uppercase !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.8px;
+  color: #64748B !important;
+  font-size: 0.75rem !important;
+  border-bottom: none !important;
+  height: 56px !important;
+}
+
+.custom-modern-table >>> td {
+  padding-top: 16px !important;
+  padding-bottom: 16px !important;
+  border-bottom: 1px solid #F1F5F9 !important;
+}
+
+.border-0 {
+  border: none !important;
+}
+
 .v-card {
-  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.v-card-actions .v-btn {
-  text-transform: none;
+
+.shadow-2xl {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
 }
 </style>

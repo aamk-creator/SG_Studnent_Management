@@ -1,79 +1,46 @@
 <template>
   <v-app>
-    <!-- NOT LOGGED IN -->
-    <LoginPage
-      v-if="!isAuthenticated"
-      @login-success="onLoginSuccess"
-    />
+    <!-- STUDENT LOGIN -->
+    <template v-if="!isAuthenticated">
+      <LoginPage @login-success="onLoginSuccess" />
+    </template>
 
-    <!-- STUDENT PORTAL (NO SIDEBAR) -->
-    <StudentPortal
-      v-else-if="isAuthenticated && isStudent"
-    />
-
-    <!-- ADMIN DASHBOARD -->
-    <template v-else>
-      <AppTopbar @toggle-drawer="toggleDrawer" />
-
-      <AppSidebar
-        v-model="drawer"
-        :mini="mini"
-        :selectedPage="selectedPage"
-        @select-page="selectedPage = $event"
-      />
+    <!-- STUDENT PORTAL -->
+    <template v-else-if="isAuthenticated && isStudent">
+      <v-app-bar color="primary" dark>
+        <v-toolbar-title>Student Portal</v-toolbar-title>
+        <v-spacer></v-spacer>
+        <v-btn text @click="logout">Logout</v-btn>
+      </v-app-bar>
 
       <v-main>
         <v-container fluid>
-          <Dashboard v-if="selectedPage === 'Dashboard'" />
-          <ViewStudent v-if="selectedPage === 'ViewStudent'" />
-          <AddStudent v-if="selectedPage === 'AddStudent'" />
-          <DeleteStudent v-if="selectedPage === 'DeleteStudent'" />
-          <AllCourses v-if="selectedPage === 'AllCourses'" />
+          <StudentPortal />
         </v-container>
       </v-main>
+    </template>
 
-      <AppFooter />
+    <!-- FALLBACK -->
+    <template v-else>
+      <v-container class="fill-height d-flex justify-center align-center">
+        <v-card>
+          <v-card-title>Error: Invalid user role</v-card-title>
+        </v-card>
+      </v-container>
     </template>
   </v-app>
 </template>
 
 <script>
-import { mapGetters } from "vuex";
-
+// Use **relative paths** to match your current folders
 import LoginPage from "./views/LoginPage.vue";
 import StudentPortal from "./views/StudentPortal.vue";
 
-import AppSidebar from "./components/layout/AppSidebar.vue";
-import AppTopbar from "./components/layout/AppTopbar.vue";
-import AppFooter from "./components/layout/AppFooter.vue";
-
-import Dashboard from "./components/dashboard/DashboardPage.vue";
-import ViewStudent from "./components/student/ViewStudent.vue";
-import AddStudent from "./components/student/AddStudent.vue";
-import DeleteStudent from "./components/student/DeleteStudent.vue";
-import AllCourses from "./components/subject/AllCourses.vue";
+import { mapGetters } from "vuex";
 
 export default {
   name: "App",
-  components: {
-    LoginPage,
-    StudentPortal,
-    AppSidebar,
-    AppTopbar,
-    AppFooter,
-    Dashboard,
-    ViewStudent,
-    AddStudent,
-    DeleteStudent,
-    AllCourses,
-  },
-  data() {
-    return {
-      drawer: true,
-      mini: false,
-      selectedPage: "Dashboard",
-    };
-  },
+  components: { LoginPage, StudentPortal },
   computed: {
     ...mapGetters(["isAuthenticated", "user"]),
     isStudent() {
@@ -81,18 +48,34 @@ export default {
     },
   },
   methods: {
-    toggleDrawer() {
-      if (this.drawer) {
-        this.mini = !this.mini;
-      } else {
-        this.drawer = true;
-        this.mini = false;
-      }
-    },
     onLoginSuccess() {
-      this.selectedPage = "Dashboard";
-      this.$store.dispatch("students/fetchStudents");
+      console.log("Student logged in successfully!");
     },
+    logout() {
+      localStorage.removeItem("student_token");
+      this.$store.commit("auth/setUser", null);
+      location.reload(); // reset login state
+    },
+  },
+  mounted() {
+    // Check token on page load
+    const token = localStorage.getItem("student_token");
+    if (token) {
+      this.$axios.get("/student/me")
+        .then(res => {
+          this.$store.commit("auth/setUser", { ...res.data.data, role: "student" });
+        })
+        .catch(err => {
+          console.error("Invalid token, logging out", err);
+          localStorage.removeItem("student_token");
+        });
+    }
   },
 };
 </script>
+
+<style scoped>
+.fill-height {
+  min-height: 100vh;
+}
+</style>
