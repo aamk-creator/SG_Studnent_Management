@@ -1,19 +1,15 @@
 import Vue from "vue";
 import Vuex from "vuex";
 import axios from "../plugins/axios";
-import students from "./modules/students";
-import studentAuth from "./modules/studentAuth";
-import studentCourses from "./modules/studentCourses";
-import studentCertificates from "./modules/studentCertificates";
+import students from "./modules/students"; 
+import users from "./modules/users";// only keep students module
 
 Vue.use(Vuex);
 
 const store = new Vuex.Store({
   modules: {
     students,
-    studentAuth,
-    studentCourses,
-    studentCertificates,
+    users, // admin can manage students
   },
 
   state: {
@@ -32,7 +28,6 @@ const store = new Vuex.Store({
 
   mutations: {
     SET_LOADING(state, value) {
-      
       state.loading = value;
     },
     SET_USER(state, user) {

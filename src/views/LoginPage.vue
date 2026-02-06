@@ -1,98 +1,112 @@
 <template>
-  <v-container fluid class="fill-height d-flex justify-center align-center">
-    <v-card max-width="400" class="mx-auto">
-      <v-card-title class="headline justify-center">Student Login</v-card-title>
-      <v-card-text>
-        <v-form v-model="valid" ref="form">
-          <v-text-field
-            label="Student Code"
-            v-model="code"
-            :rules="[v => !!v || 'Code is required']"
-            outlined dense
-          />
-          <v-text-field
-            label="Password"
-            v-model="password"
-            type="password"
-            :rules="[v => !!v || 'Password is required']"
-            outlined dense
-          />
-          <v-btn
-            color="primary"
-            block
-            :disabled="!valid || loading"
-            :loading="loading"
-            class="mt-4"
-            @click="login"
-          >
-            Login
-          </v-btn>
-        </v-form>
-      </v-card-text>
+  <v-container fluid class="login-bg">
+    <v-row align="center" justify="center" class="fill-height">
+      <v-col cols="12" sm="8" md="4">
+        <v-card class="login-card" elevation="12">
+          <v-card-text>
 
-      <v-snackbar v-model="snackbar" :color="snackbarColor" timeout="3000">
-        {{ snackbarText }}
-      </v-snackbar>
-    </v-card>
+            <!-- Lock icon -->
+            <div class="text-center mb-6">
+              <v-icon size="48" color="green darken-1">mdi-lock</v-icon>
+            </div>
+
+            <!-- Email -->
+            <v-text-field
+              v-model="email"
+              label="Email"
+              prepend-inner-icon="mdi-account"
+              color="green"
+              dense
+              outlined
+              hide-details
+            />
+
+            <!-- Password -->
+            <v-text-field
+              v-model="password"
+              label="Password"
+              :type="showPassword ? 'text' : 'password'"
+              prepend-inner-icon="mdi-lock"
+              :append-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
+              @click:append="showPassword = !showPassword"
+              color="green"
+              dense
+              outlined
+              hide-details
+              class="mt-4"
+            />
+
+            <!-- Error -->
+            <v-alert
+              v-if="error"
+              type="error"
+              dense
+              text
+              class="mt-3"
+            >
+              {{ error }}
+            </v-alert>
+
+            <!-- Login button -->
+            <v-btn
+              block
+              large
+              color="light-green darken-1"
+              class="mt-6 white--text"
+              :loading="loading"
+              @click="submitLogin"
+            >
+              LOGIN
+            </v-btn>
+
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
   </v-container>
 </template>
 
 <script>
+import { mapActions, mapState } from "vuex";
+
 export default {
-  name: "StudentLoginTest",
+  name: "LoginPage",
   data() {
     return {
-      code: "",
+      email: "",
       password: "",
-      valid: false,
-      loading: false,
-      snackbar: false,
-      snackbarText: "",
-      snackbarColor: "error",
+      showPassword: false,
     };
   },
+  computed: {
+    ...mapState(["loading", "error"]),
+  },
   methods: {
-    async login() {
-      if (!this.$refs.form.validate()) return;
+    ...mapActions(["login"]),
 
-      this.loading = true;
-      try {
-        const res = await this.$axios.post("/student/login", {
-          code: this.code,
-          password: this.password,
-        });
+    async submitLogin() {
+      if (!this.email || !this.password) return;
 
-        // Save student token
-        localStorage.setItem("student_token", res.data.token);
+      await this.login({ email: this.email, password: this.password });
 
-        // Optional: show success message
-        this.snackbarText = "Login successful!";
-        this.snackbarColor = "success";
-        this.snackbar = true;
-
-        // Save student info in store
-        this.$store.commit("auth/setUser", { ...res.data.student, role: "student" });
-
-        // Notify parent App.vue if needed
+      if (!this.error) {
+        // Emit to parent that login succeeded
+        await this.$store.dispatch("students/fetchStudents");
         this.$emit("login-success");
-
-        console.log("Student logged in:", res.data.student);
-
-      } catch (err) {
-        console.error(err);
-        this.snackbarText = err.response?.data?.message || "Login failed";
-        this.snackbarColor = "error";
-        this.snackbar = true;
-      } finally {
-        this.loading = false;
       }
+
     },
   },
 };
 </script>
 
 <style scoped>
-.fill-height {
-  min-height: 100vh;
+.login-bg {
+  background-color: #eaf6ff;
+}
+
+.login-card {
+  border-radius: 8px;
+  padding: 16px;
 }
 </style>

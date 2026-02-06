@@ -1,161 +1,150 @@
 <template>
-  <v-container fluid class="white py-8 px-10">
-    <v-row align="center" class="mb-10">
-      <v-col>
-        <div class="d-flex align-center mb-2">
-          <v-chip color="light-green lighten-5" text-color="light-green darken-3" small class="font-weight-black px-4">
-            LIVE SYSTEM STATUS
-          </v-chip>
-        </div>
-        <h1 class="text-h4 font-weight-black grey--text text--darken-4">
-          Academic <span class="light-green--text text--darken-1">Performance</span>
-        </h1>
-      </v-col>
-      <v-col cols="auto">
-        <v-btn depressed class="light-green darken-1 rounded-lg px-6 white--text font-weight-bold" height="48">
-          <v-icon left>mdi-plus-circle-outline</v-icon>
-          New Admission
-        </v-btn>
-      </v-col>
-    </v-row>
+  <v-app>
+    <AppSidebar
+      :selected-page="selectedPage"
+      :mini="mini"
+      @select-page="selectedPage = $event"
+    />
 
-    <v-row class="mb-8">
-      <v-col cols="12" sm="6" md="3" v-for="(stats, i) in summaryStats" :key="i">
-        <v-card outlined class="rounded-xl pa-5 border-mint shadow-soft">
-          <div class="d-flex justify-space-between align-center mb-4">
-            <v-avatar :color="stats.color + ' lighten-5'" size="44">
-              <v-icon :color="stats.color + ' darken-1'" size="24">{{ stats.icon }}</v-icon>
-            </v-avatar>
-            <v-chip x-small color="grey lighten-4" class="grey--text text--darken-1 font-weight-bold">
-              {{ stats.period }}
-            </v-chip>
-          </div>
-          <div>
-            <div class="text-h4 font-weight-black grey--text text--darken-4 mb-1">{{ stats.value }}</div>
-            <div class="caption font-weight-bold grey--text text--lighten-1 text-uppercase tracking-widest">
-              {{ stats.title }}
-            </div>
-          </div>
-          <v-progress-linear
-            :value="stats.progress"
-            :color="stats.color + ' lighten-2'"
-            height="4"
-            class="mt-4 rounded-pill"
-          ></v-progress-linear>
-        </v-card>
-      </v-col>
-    </v-row>
+    <AppTopbar @toggle-drawer="mini = !mini" />
 
-    <v-row class="mb-10">
-      <v-col cols="12" md="8">
-        <v-card outlined class="rounded-xl pa-6 border-mint">
-          <div class="d-flex align-center justify-space-between mb-8">
-            <span class="text-h6 font-weight-black grey--text text--darken-3">Student Growth</span>
-            <div class="d-flex border-sm rounded-lg overflow-hidden">
-              <v-btn x-small depressed tile class="grey lighten-5 grey--text">Day</v-btn>
-              <v-btn x-small depressed tile color="light-green lighten-4" class="light-green--text text--darken-3">Month</v-btn>
-            </div>
-          </div>
-          
-          <div class="d-flex align-end justify-space-around" style="height: 220px;">
-            <div v-for="(bar, i) in enrollmentData" :key="i" class="text-center">
-              <v-hover v-slot="{ hover }">
-                <div 
-                  class="light-green transition-all rounded-t-xl" 
-                  :class="hover ? 'light-green darken-1' : 'light-green lighten-2'"
-                  :style="{ height: bar.height + 'px', width: '40px' }"
-                ></div>
-              </v-hover>
-              <div class="caption mt-3 font-weight-black blue-grey--text text--lighten-2">{{ bar.month }}</div>
-            </div>
-          </div>
-        </v-card>
-      </v-col>
+    <v-main class="bg-grey lighten-4">
+      <v-container fluid class="py-8 px-10">
+        <template v-if="selectedPage === 'Dashboard'">
+          <v-row class="mb-6">
+            <v-col cols="12" sm="4">
+              <v-card color="teal darken-1" dark elevation="2" rounded="lg">
+                <v-list-item>
+                  <v-list-item-content>
+                    <v-list-item-subtitle class="text-uppercase caption">
+                      Total Students
+                    </v-list-item-subtitle>
+                    <v-list-item-title class="display-1">
+                      {{ totalStudents }}
+                    </v-list-item-title>
+                  </v-list-item-content>
+                  <v-icon size="48" class="opacity-60">mdi-school</v-icon>
+                </v-list-item>
+              </v-card>
+            </v-col>
 
-      <v-col cols="12" md="4">
-        <v-card outlined class="rounded-xl pa-6 border-mint">
-          <span class="text-h6 font-weight-black grey--text text--darken-3 d-block mb-6">Course Load</span>
-          <div v-for="(course, i) in courseDist" :key="i" class="mb-6">
-            <div class="d-flex justify-space-between mb-2 align-center">
-              <span class="body-2 font-weight-bold grey--text text--darken-2">{{ course.name }}</span>
-              <span class="caption font-weight-black light-green--text text--darken-3">{{ course.pct }}%</span>
-            </div>
-            <v-progress-linear 
-              :value="course.pct" 
-              color="light-green lighten-1" 
-              background-color="grey lighten-4"
-              rounded 
-              height="10"
-            ></v-progress-linear>
-          </div>
-          <v-btn block text color="light-green darken-2" class="rounded-lg mt-2 font-weight-bold">
-            View Department Details
-          </v-btn>
-        </v-card>
-      </v-col>
-    </v-row>
+            <v-col cols="12" sm="4">
+              <v-card color="indigo darken-1" dark elevation="2" rounded="lg">
+                <v-list-item>
+                  <v-list-item-content>
+                    <v-list-item-subtitle class="text-uppercase caption">
+                      Total Courses
+                    </v-list-item-subtitle>
+                    <v-list-item-title class="display-1">
+                      {{ totalCourses }}
+                    </v-list-item-title>
+                  </v-list-item-content>
+                  <v-icon size="48" class="opacity-60">mdi-book-open-variant</v-icon>
+                </v-list-item>
+              </v-card>
+            </v-col>
 
-    <div class="d-flex align-center mb-6">
-      <v-icon color="light-green darken-2" class="mr-2">mdi-layers-outline</v-icon>
-      <span class="text-h6 font-weight-black grey--text text--darken-3">Recent Enrollments</span>
-      <v-spacer></v-spacer>
-      <v-btn small outlined color="grey lighten-1" class="rounded-pill grey--text text--darken-2 px-4 font-weight-bold">
-        View All
-      </v-btn>
-    </div>
-    
-    <v-card outlined class="rounded-xl border-mint overflow-hidden">
-      <StudentTable />
-    </v-card>
-  </v-container>
+            <v-col cols="12" sm="4">
+              <v-card color="blue-grey darken-1" dark elevation="2" rounded="lg">
+                <v-list-item>
+                  <v-list-item-content>
+                    <v-list-item-subtitle class="text-uppercase caption">
+                      Total Branches
+                    </v-list-item-subtitle>
+                    <v-list-item-title class="display-1">
+                      {{ totalBranches }}
+                    </v-list-item-title>
+                  </v-list-item-content>
+                  <v-icon size="48" class="opacity-60">mdi-map-marker-radius</v-icon>
+                </v-list-item>
+              </v-card>
+            </v-col>
+          </v-row>
+
+          <v-row class="mb-6">
+            <v-col cols="12">
+              <v-card elevation="2" rounded="lg">
+                <v-sheet class="v-sheet--offset mx-auto" color="transparent" max-width="calc(100% - 32px)">
+                  <!-- optional chart or content -->
+                </v-sheet>
+              </v-card>
+            </v-col>
+          </v-row>
+
+          <v-row>
+            <v-col cols="12">
+              <StudentTable />
+            </v-col>
+          </v-row>
+        </template>
+
+        <template v-else-if="selectedPage === 'ViewStudent'">
+          <ViewStudent />
+        </template>
+        <template v-else-if="selectedPage === 'AllCourses'">
+          <AllCourses />
+        </template>
+      </v-container>
+    </v-main>
+    <AppFooter />
+  </v-app>
 </template>
 
 <script>
-import StudentTable from '@/components/student/StudentTable.vue'
+import AppSidebar from "@/components/layout/AppSidebar.vue";
+import AppTopbar from "@/components/layout/AppTopbar.vue";
+import AppFooter from "@/components/layout/AppFooter.vue";
+
+import StudentTable from "@/components/student/StudentTable.vue";
+import ViewStudent from "@/components/student/ViewStudent.vue";
+import AllCourses from "@/components/subject/AllCourses.vue";
 
 export default {
-  name: 'DashboardPage',
-  components: { StudentTable },
+  name: "DashboardPage",
+  components: {
+    AppSidebar,
+    AppTopbar,
+    AppFooter,
+    StudentTable,
+    ViewStudent,
+    AllCourses,
+  },
   data() {
     return {
-      summaryStats: [
-        { title: 'Total Students', value: '1,284', icon: 'mdi-account-group-outline', color: 'light-green', progress: 75, period: 'Monthly' },
-        { title: 'Active Courses', value: '42', icon: 'mdi-book-open-outline', color: 'light-blue', progress: 40, period: 'Annual' },
-        { title: 'Attendance', value: '94.2%', icon: 'mdi-calendar-check-outline', color: 'amber', progress: 94, period: 'Weekly' },
-        { title: 'New Leads', value: '+12', icon: 'mdi-trending-up', color: 'deep-orange', progress: 20, period: 'Daily' },
-      ],
-      enrollmentData: [
-        { month: 'JAN', height: 110 }, { month: 'FEB', height: 160 },
-        { month: 'MAR', height: 90 }, { month: 'APR', height: 200 },
-        { month: 'MAY', height: 150 }, { month: 'JUN', height: 170 },
-      ],
-      courseDist: [
-        { name: 'Computer Science', pct: 85 },
-        { name: 'Business Admin', pct: 60 },
-        { name: 'Digital Arts', pct: 35 },
-      ]
-    }
-  }
-}
+      mini: false,
+      selectedPage: "Dashboard",
+    };
+  },
+  computed: {
+    // Pull counts directly from Vuex (reactive)
+    totalStudents() {
+      return this.$store.getters["students/totalStudents"];
+    },
+    totalCourses() {
+      return this.$store.getters["students/totalCourses"];
+    },
+    totalBranches() {
+      return this.$store.getters["students/totalBranches"];
+    },
+  },
+  created() {
+    // Fetch all data for dashboard
+    this.$store.dispatch("students/fetchStudents");
+    this.$store.dispatch("students/fetchCourses");
+    this.$store.dispatch("students/fetchBranches");
+  },
+};
 </script>
 
 <style scoped>
-.border-mint {
-  border: 1px solid #F1F8E9 !important; /* Very light mint border */
+.bg-grey {
+  background-color: #f8f9fa !important;
 }
-.border-sm {
-  border: 1px solid #ECEFF1;
+.v-sheet--offset {
+  top: -10px;
+  position: relative;
 }
-.shadow-soft {
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02) !important;
-}
-.tracking-widest {
-  letter-spacing: 2px !important;
-}
-.transition-all {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.v-card:hover {
-  border-color: #DCEDC8 !important; /* light-green lighten-4 */
+.opacity-60 {
+  opacity: 0.6;
 }
 </style>

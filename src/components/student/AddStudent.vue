@@ -33,7 +33,7 @@
             v-model="student.email"
             :rules="[
               (v) => !!v || 'Required',
-              (v) => /.+@.+\..+/.test(v) || 'Email must be valid',
+              (v) => /.+@.+\..+/.test(v) || 'Email must be valid'
             ]"
             prepend-icon="mdi-email"
           />
@@ -52,7 +52,7 @@
             v-model="student.password"
             :rules="[
               (v) => !!v || 'Required',
-              (v) => v.length >= 6 || 'Password must be at least 6 characters',
+              (v) => v.length >= 6 || 'Password must be at least 6 characters'
             ]"
             prepend-icon="mdi-lock"
             type="password"
@@ -103,12 +103,11 @@
 </template>
 
 <script>
-import axios from "axios";
+import axios from "@/plugins/axios";
 import { mapActions } from "vuex";
 
 export default {
   name: "AddStudent",
-
   data() {
     return {
       valid: false,
@@ -118,7 +117,7 @@ export default {
         name: "",
         email: "",
         phone: "",
-         password: "",
+        password: "",
         course_id: null,
         branch_id: null,
       },
@@ -126,45 +125,58 @@ export default {
       branches: [],
     };
   },
-
   methods: {
     ...mapActions("students", ["addStudent"]),
 
+    // Fetch courses from API
     async fetchCourses() {
       try {
-        const res = await axios.get("/courses");
+        const token = localStorage.getItem("token");
+        const res = await axios.get("/courses", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         this.courses = res.data.data || [];
       } catch (err) {
         console.error("Fetch courses failed:", err);
       }
     },
 
+    // Fetch branches from API
     async fetchBranches() {
       try {
-        const res = await axios.get("/branches");
+        const token = localStorage.getItem("token");
+        const res = await axios.get("/branches", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         this.branches = res.data.data || [];
       } catch (err) {
         console.error("Fetch branches failed:", err);
       }
     },
 
+    // Submit form
     async submitForm() {
       const valid = await this.$refs.form.validate();
       if (!valid) return;
 
       this.loading = true;
       try {
-        //AUTO table update)
-        await this.addStudent({
-          ...this.student,
-          user_id: 1, // temp admin user
-        });
+        // Get admin id from localStorage (replace with your auth logic if different)
+        const currentUser = JSON.parse(localStorage.getItem("user")) || {};
 
-        // Close dialog & reset
-        this.closeDialog();
+        const payloadToSend = {
+          ...this.student,
+          user_id: currentUser.id || 1, // default to 1 if not found
+        };
+
+        await this.addStudent(payloadToSend);
+
         this.resetForm();
+        this.closeDialog();
+        this.$emit("student-added");
       } catch (err) {
-        console.error("Add student failed:", err);
+        console.error("Add student failed:", err.response?.data || err);
+        alert(err.response?.data?.message || "Failed to add student");
       } finally {
         this.loading = false;
       }
@@ -187,7 +199,6 @@ export default {
       this.$emit("close-dialog");
     },
   },
-
   mounted() {
     this.fetchCourses();
     this.fetchBranches();
